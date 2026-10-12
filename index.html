@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>✈️ Airport Adventure — how airports work!</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#eaf4fb;color:#17395c;font-family:'Comic Sans MS','Segoe UI',system-ui,sans-serif}
+  #app{max-width:1400px;margin:0 auto;padding:10px 12px 30px}
+  header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  h1{font-size:1.5rem;margin:4px 0}
+  h1 .sub{font-size:.95rem;color:#3f6a94;font-weight:600}
+  .tools button{font-family:inherit;font-weight:700;border:2.5px solid #17395c;background:#fff;border-radius:12px;padding:6px 12px;margin-left:6px;cursor:pointer;font-size:.9rem}
+  .tools button.on{background:#ffd166}
+  #hint{background:#fff;border:3px dashed #ff9f1c;border-radius:16px;padding:10px 16px;font-size:1.08rem;margin:10px 0;font-weight:700;min-height:2.6em}
+  #hint b{color:#e63946}
+  #main{display:flex;gap:12px;align-items:flex-start}
+  #scene-wrap{flex:1;position:relative;min-width:0}
+  svg#scene{width:100%;height:auto;display:block;border-radius:18px;border:4px solid #17395c;background:#dff3ff;touch-action:none;user-select:none;-webkit-user-select:none}
+  #panel{width:305px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+  #panel section{background:#fff;border:3px solid #17395c;border-radius:16px;padding:10px 12px}
+  #panel h3{margin:0 0 6px;font-size:1rem}
+  .srow{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;padding:3.5px 0;border-bottom:1px dashed #cfe0ee;align-items:baseline}
+  .srow:last-child{border-bottom:none}
+  .srow b{font-size:.85rem;text-align:right}
+  .val.no{color:#c43d3d}
+  .val.ok{color:#14924a}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{border-radius:999px;background:#e6eef5;padding:4px 10px;font-size:.78rem;font-weight:700}
+  .chip.done{background:#14924a;color:#fff}
+  #radioLog{background:#0f2740;color:#cfe8ff;border-radius:10px;padding:8px 10px;font-size:.8rem;font-family:ui-monospace,Consolas,monospace;height:150px;overflow-y:auto;line-height:1.45}
+  #radioLog .msg{margin-bottom:4px}
+  #radioLog b{color:#ffd166}
+  #controls{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:flex;gap:12px;align-items:center;background:rgba(15,39,64,.88);padding:10px 14px;border-radius:18px;max-width:95%}
+  #btns{display:flex;gap:10px}
+  button.ctl{font-family:inherit;font-weight:800;font-size:1rem;border:3px solid #17395c;border-radius:14px;background:#ff8c42;color:#17395c;padding:9px 16px;cursor:pointer;box-shadow:0 4px 0 #b35617}
+  button.ctl:active{transform:translateY(3px);box-shadow:0 1px 0 #b35617}
+  button.ctl.hold{background:#4ecdc4;box-shadow:0 4px 0 #23857e}
+  button.ctl.hold:active{box-shadow:0 1px 0 #23857e}
+  #speedo{display:none;flex-direction:column;align-items:center;gap:3px}
+  #speedo.show{display:flex}
+  #speedBar{width:190px;height:20px;border-radius:10px;border:2.5px solid #17395c;position:relative;background:linear-gradient(90deg,#e5484d 0 65%,#2fbf71 65% 94%,#ffd166 94%)}
+  #needle{position:absolute;top:-7px;bottom:-7px;width:6px;background:#fff;border:1.5px solid #17395c;border-radius:3px;left:0}
+  #speedNum{color:#fff;font-weight:800;font-size:.85rem}
+  #factToast{position:absolute;left:14px;bottom:14px;max-width:420px;background:#fffbe8;border:3px solid #ff9f1c;border-radius:14px;padding:10px 14px;font-size:.92rem;font-weight:700;display:none;box-shadow:0 6px 14px rgba(23,57,92,.25)}
+  #overlay{position:fixed;inset:0;background:rgba(15,39,64,.55);display:none;align-items:center;justify-content:center;z-index:50}
+  #overlay.show{display:flex}
+  #overlay .card{background:#fff;border-radius:22px;border:4px solid #17395c;max-width:560px;width:92%;padding:22px 26px;text-align:center;max-height:88vh;overflow-y:auto}
+  #overlay h2{margin:0 0 8px}
+  #overlay ol{text-align:left;font-size:.95rem;line-height:1.55}
+  #overlay button{font-family:inherit;font-weight:800;font-size:1.05rem;border:3px solid #17395c;border-radius:14px;background:#ff8c42;padding:10px 22px;cursor:pointer;margin-top:8px;box-shadow:0 4px 0 #b35617}
+  #panelToggle,#panelClose{display:none}
+  #panelClose{position:absolute;top:8px;right:10px;border:2px solid #17395c;background:#fff;border-radius:10px;font-weight:800;font-size:1rem;padding:2px 10px;cursor:pointer;font-family:inherit}
+  @media (max-width:980px){
+    #panelToggle{display:inline-block}
+    #main{flex-direction:column}
+    #scene-wrap{flex:0 0 auto;width:100%}
+    svg#scene{width:auto;height:min(56vh,calc(100vh - 170px));min-height:200px;max-width:100%;margin:0 auto}
+    #panel{position:fixed;top:0;right:0;bottom:0;width:min(330px,88vw);transform:translateX(105%);transition:transform .25s;z-index:70;overflow-y:auto;background:#eaf4fb;padding:12px 10px;margin:0}
+    #panel.open{transform:none}
+    #panelClose{display:block}
+    button.ctl{font-size:.95rem;padding:9px 13px}
+    #controls{bottom:8px;flex-wrap:wrap;justify-content:center;gap:8px;max-width:97%}
+    #hint{font-size:1rem;padding:9px 12px}
+    header h1{font-size:1.15rem}
+  }
+  @media (max-height:520px) and (max-width:980px){
+    header h1{font-size:.92rem;margin:2px 0}
+    .tools button{padding:3px 8px;font-size:.78rem;margin-left:4px}
+    #hint{font-size:.85rem;padding:5px 10px;margin:5px 0;min-height:0}
+    #app{padding:5px 6px 16px}
+    svg#scene{height:min(56vh,calc(100vh - 128px));min-height:170px}
+  }
+  /* pulsing "go here" targets */
+  .tp{display:none}
+  .tp.on{display:block}
+  .tp rect{fill:rgba(255,209,102,.16);stroke:#ff9f1c;stroke-width:4.5;stroke-dasharray:11 9;animation:tppulse 1.15s ease-in-out infinite}
+  .tp .tapHand{font-size:27px;animation:bounce .9s ease-in-out infinite}
+  @keyframes tppulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.2}}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  #packRing{fill:rgba(255,159,28,.16);stroke:#ff9f1c;stroke-width:4;stroke-dasharray:9 7;animation:tppulse 1.15s infinite}
+  /* big X-ray pop-up */
+  #xrayModal{position:fixed;inset:0;background:rgba(15,39,64,.62);display:none;align-items:center;justify-content:center;z-index:60}
+  #xrayModal.show{display:flex}
+  .xmCard{background:#fff;border-radius:22px;border:4px solid #17395c;padding:16px 20px 20px;text-align:center;max-width:92vw}
+  .xmTitle{font-weight:800;font-size:1.15rem;margin-bottom:10px}
+  .xmScreen{background:#0e2233;border-radius:16px;padding:16px 24px;display:flex;gap:26px;align-items:center;justify-content:center}
+  .xmItem{font-size:54px}
+  #bigBottle{font-family:inherit;font-size:54px;line-height:1.2;background:rgba(255,60,60,.16);border:4px dashed #ff3b30;border-radius:18px;padding:2px 12px;cursor:pointer;animation:tppulse 1s infinite}
+  #bigBottle.empty{border-color:#2fbf71;background:rgba(47,191,113,.16);animation:none;cursor:default}
+  .xmText{margin-top:10px;font-size:1.05rem}
+  /* rotate-the-phone prompt */
+  #rotateOverlay{display:none;position:fixed;inset:0;z-index:100;background:#17395c;color:#fff;align-items:center;justify-content:center;text-align:center;font-size:min(1.4rem,5.8vw);font-weight:800;padding:24px;line-height:1.6}
+  #rotateOverlay small{font-size:1rem;font-weight:600;color:#bfe3ff}
+  @media (orientation:portrait) and (max-width:860px){#rotateOverlay{display:flex}}
+  .stepChip{display:inline-block;background:#ff9f1c;color:#17395c;border-radius:999px;font-size:.82rem;font-weight:800;padding:2px 10px;margin-right:8px;vertical-align:middle}
+  /* SVG text + interactivity helpers */
+  #scene text{font-family:'Comic Sans MS','Segoe UI',sans-serif;font-weight:700}
+  .draggable{cursor:grab}
+  #plane.xray #fus,#plane.xray .fusPart{fill-opacity:.55}
+  #plane.xray #seats{opacity:1 !important}
+  .hotspot{cursor:pointer}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>✈️ AIRPORT ADVENTURE <span class="sub">— help Maya catch her flight to Beachland!</span></h1>
+    <div class="tools">
+      <button id="panelToggle">📋 status</button>
+      <button id="btnSound" title="sound on/off">🔊 sound</button>
+      <button id="btnSlow" title="slow motion">🐢 slow-mo</button>
+      <button id="btnReset" title="start over">↺ start over</button>
+    </div>
+  </header>
+  <div id="hint">👋 Meet <b>Maya!</b> Drag her to the <b>CHECK-IN</b> desk inside the terminal.</div>
+  <div id="main">
+    <div id="scene-wrap">
+      <svg id="scene" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#6ec1ff"/><stop offset="1" stop-color="#eaf7ff"/>
+          </linearGradient>
+          <g id="cloudShape">
+            <ellipse cx="0" cy="0" rx="46" ry="20" fill="#ffffff" opacity=".95"/>
+            <ellipse cx="36" cy="7" rx="32" ry="14" fill="#ffffff" opacity=".95"/>
+            <ellipse cx="-36" cy="8" rx="28" ry="13" fill="#ffffff" opacity=".95"/>
+          </g>
+        </defs>
+
+        <!-- ============ SKY ============ -->
+        <rect x="0" y="0" width="1600" height="340" fill="url(#skyG)"/>
+        <circle cx="1455" cy="88" r="42" fill="#ffd166" stroke="#f4a912" stroke-width="5"/>
+        <use id="cl1" href="#cloudShape" transform="translate(240,95)"/>
+        <use id="cl2" href="#cloudShape" transform="translate(760,60)"/>
+        <use id="cl3" href="#cloudShape" transform="translate(1130,140)"/>
+
+        <!-- ============ GROUND ============ -->
+        <rect x="0" y="330" width="1600" height="570" fill="#8ed081"/>
+        <!-- trees / bushes bottom-left -->
+        <g stroke="#17395c" stroke-width="3">
+          <rect x="104" y="672" width="14" height="34" fill="#8b5e34"/>
+          <circle cx="111" cy="650" r="30" fill="#58a35c"/>
+          <rect x="216" y="736" width="12" height="28" fill="#8b5e34"/>
+          <circle cx="222" cy="716" r="24" fill="#58a35c"/>
+          <circle cx="70" cy="800" r="16" fill="#58a35c"/>
+          <circle cx="130" cy="812" r="13" fill="#58a35c"/>
+          <circle cx="300" cy="806" r="15" fill="#58a35c"/>
+        </g>
+        <g fill="#ff8fa3"><circle cx="180" cy="700" r="4"/><circle cx="260" cy="780" r="4"/><circle cx="90" cy="760" r="4"/></g>
+
+        <!-- ============ RUNWAY / TAXIWAY / APRON ============ -->
+        <rect x="660" y="430" width="940" height="470" fill="#c9d2da"/>
+        <rect x="660" y="583" width="940" height="72" fill="#bcc7d1"/>
+        <line x1="690" y1="620" x2="1178" y2="620" stroke="#ffd166" stroke-width="5" stroke-dasharray="26 20"/>
+        <rect id="rwyRect" x="1180" y="548" width="410" height="144" fill="#46525e" class="hotspot"/>
+        <line x1="1192" y1="556" x2="1192" y2="684" stroke="#fff" stroke-width="7"/>
+        <line x1="1578" y1="556" x2="1578" y2="684" stroke="#fff" stroke-width="7"/>
+        <line x1="1210" y1="620" x2="1570" y2="620" stroke="#fff" stroke-width="6" stroke-dasharray="34 26"/>
+        <g fill="#fff">
+          <rect x="1216" y="560" width="8" height="40"/><rect x="1216" y="612" width="8" height="40"/>
+        </g>
+        <text id="rwy27" class="hotspot" x="1250" y="668" font-size="34" fill="#fff">27</text>
+        <text x="1380" y="592" font-size="14" fill="#ffd166">RUNWAY 27</text>
+        <!-- hold-short lines -->
+        <line x1="1150" y1="585" x2="1150" y2="653" stroke="#ffd166" stroke-width="6"/>
+        <line x1="1158" y1="585" x2="1158" y2="653" stroke="#ffd166" stroke-width="6"/>
+        <!-- gate stand marking + cone -->
+        <path d="M700,570 h250 M700,570 v-30" stroke="#ffd166" stroke-width="5" fill="none" stroke-dasharray="18 12"/>
+        <path d="M694,562 l12,-20 l12,20 Z" fill="#ff6b3d" stroke="#17395c" stroke-width="2.5"/>
+
+        <!-- ============ WINDSOCK ============ -->
+        <g id="sock" class="hotspot">
+          <line x1="1548" y1="700" x2="1548" y2="474" stroke="#8a93a1" stroke-width="6"/>
+          <g id="sockCloth">
+            <path d="M1548,470 L1490,477 L1490,493 L1548,500 Z" fill="#ff6b3d" stroke="#17395c" stroke-width="2.5"/>
+            <path d="M1514,473.4 L1490,477 L1490,493 L1514,496.6 Z" fill="#fff" stroke="#17395c" stroke-width="1.5"/>
+          </g>
+          <circle cx="1548" cy="470" r="5.5" fill="#17395c"/>
+        </g>
+
+        <!-- ============ CONTROL TOWER ============ -->
+        <g id="towerG" class="hotspot">
+          <rect x="716" y="206" width="38" height="226" fill="#fff" stroke="#17395c" stroke-width="3"/>
+          <rect x="716" y="250" width="38" height="26" fill="#ff6b6b"/>
+          <rect x="716" y="330" width="38" height="26" fill="#ff6b6b"/>
+          <text x="735" y="312" font-size="13" text-anchor="middle" fill="#17395c">TOWER</text>
+          <rect x="698" y="148" width="72" height="60" rx="12" fill="#a8dcff" stroke="#17395c" stroke-width="3.5"/>
+          <line x1="698" y1="182" x2="770" y2="182" stroke="#17395c" stroke-width="3"/>
+          <rect x="725" y="128" width="18" height="20" fill="#8a93a1" stroke="#17395c" stroke-width="2.5"/>
+          <g id="radarArm"><line x1="754" y1="122" x2="778" y2="104" stroke="#17395c" stroke-width="4" stroke-linecap="round"/></g>
+          <circle cx="754" cy="122" r="4.5" fill="#17395c"/>
+        </g>
+
+        <!-- ============ TERMINAL (dollhouse view) ============ -->
+        <g id="terminal">
+          <rect x="20" y="90" width="640" height="350" fill="#fff6e8" stroke="#17395c" stroke-width="4"/>
+          <rect x="12" y="68" width="656" height="36" rx="10" fill="#ff6b6b" stroke="#17395c" stroke-width="3.5"/>
+          <text x="340" y="93" font-size="21" text-anchor="middle" fill="#fff">✈ LITTLE AIRPORT ✈</text>
+          <!-- interior windows band -->
+          <rect x="40" y="116" width="600" height="64" rx="8" fill="#bfe6ff" stroke="#17395c" stroke-width="3"/>
+          <line x1="140" y1="116" x2="140" y2="180" stroke="#17395c" stroke-width="2.5"/>
+          <line x1="240" y1="116" x2="240" y2="180" stroke="#17395c" stroke-width="2.5"/>
+          <line x1="340" y1="116" x2="340" y2="180" stroke="#17395c" stroke-width="2.5"/>
+          <line x1="440" y1="116" x2="440" y2="180" stroke="#17395c" stroke-width="2.5"/>
+          <line x1="540" y1="116" x2="540" y2="180" stroke="#17395c" stroke-width="2.5"/>
+          <!-- entrance door -->
+          <rect x="34" y="330" width="46" height="110" rx="4" fill="#9fd8ff" stroke="#17395c" stroke-width="3"/>
+          <text x="57" y="320" font-size="13" text-anchor="middle" fill="#17395c">IN →</text>
+
+          <!-- CHECK-IN -->
+          <g id="checkinSign" class="hotspot">
+            <rect x="138" y="294" width="134" height="32" rx="8" fill="#ffd166" stroke="#17395c" stroke-width="2.5"/>
+            <text x="205" y="316" font-size="16" text-anchor="middle" fill="#17395c">CHECK-IN ✏️</text>
+          </g>
+          <g id="agent">
+            <circle cx="256" cy="322" r="11" fill="#f2c9a0" stroke="#17395c" stroke-width="2.5"/>
+            <path d="M245,318 q11,-13 22,0 q-11,-6 -22,0" fill="#5b3a29"/>
+            <rect x="243" y="333" width="26" height="18" rx="6" fill="#2f6fd6" stroke="#17395c" stroke-width="2.5"/>
+          </g>
+          <rect x="118" y="352" width="176" height="88" fill="#4ecdc4" stroke="#17395c" stroke-width="3"/>
+          <rect x="112" y="344" width="188" height="12" rx="6" fill="#35b5ac" stroke="#17395c" stroke-width="2.5"/>
+          <text x="150" y="400" font-size="13" fill="#0f4c47" font-weight="bold">drop big bags</text>
+          <text x="150" y="418" font-size="13" fill="#0f4c47" font-weight="bold">here ↓</text>
+          <g id="printer" opacity="0">
+            <rect x="176" y="322" width="44" height="18" rx="3" fill="#e9ecef" stroke="#17395c" stroke-width="2"/>
+            <rect id="ticketSlip" x="184" y="338" width="28" height="12" fill="#fff" stroke="#17395c" stroke-width="1.5"/>
+          </g>
+          <rect x="238" y="432" width="50" height="10" fill="#2b3440"/>
+          <path d="M254,442 l9,14 l9,-14 Z" fill="#2b3440"/>
+        </g>
+
+        <!-- SECURITY -->
+        <g id="securityG">
+          <rect x="318" y="294" width="150" height="30" rx="8" fill="#ff8fa3" stroke="#17395c" stroke-width="2.5"/>
+          <text x="393" y="315" font-size="15" text-anchor="middle" fill="#17395c">SECURITY 🛡️</text>
+          <g id="xrayMachine" class="hotspot">
+            <rect x="328" y="330" width="124" height="110" rx="10" fill="#6c7a89" stroke="#17395c" stroke-width="3"/>
+            <rect x="340" y="340" width="100" height="42" rx="4" fill="#0e2233"/>
+            <g id="xrayView" opacity="0">
+              <text x="372" y="369" font-size="19" text-anchor="middle">🧸📕</text>
+              <g id="bottleG" style="pointer-events:none">
+                <circle id="bottleRing" cx="416" cy="361" r="13" fill="rgba(255,60,60,.25)" stroke="#ff3b30" stroke-width="2.5"/>
+                <text id="bottleTxt" x="416" y="367" font-size="15" text-anchor="middle">💧</text>
+              </g>
+              <text id="xrayOK" x="390" y="369" font-size="17" text-anchor="middle" fill="#3ddc84" opacity="0">✔ ALL CLEAR</text>
+            </g>
+            <rect x="324" y="396" width="12" height="30" rx="2" fill="#2b3440"/>
+            <rect x="444" y="396" width="12" height="30" rx="2" fill="#2b3440"/>
+            <line class="belt" x1="336" y1="424" x2="444" y2="424" stroke="#aab4bd" stroke-width="6" stroke-dasharray="7 7"/>
+            <rect x="348" y="452" width="8" height="14" fill="#17395c"/><rect x="424" y="452" width="8" height="14" fill="#17395c"/>
+          </g>
+          <g id="archG">
+            <rect x="468" y="300" width="12" height="140" fill="#9fd8ff" stroke="#17395c" stroke-width="2.5"/>
+            <rect x="524" y="300" width="12" height="140" fill="#9fd8ff" stroke="#17395c" stroke-width="2.5"/>
+            <rect x="460" y="286" width="84" height="17" rx="6" fill="#cfe0ee" stroke="#17395c" stroke-width="2.5"/>
+            <circle id="archLight" cx="502" cy="294" r="5.5" fill="#22bb55" stroke="#17395c" stroke-width="2"/>
+          </g>
+        </g>
+
+        <!-- GATE -->
+        <g id="gateG">
+          <rect x="544" y="288" width="112" height="28" rx="8" fill="#ffd166" stroke="#17395c" stroke-width="2.5"/>
+          <text x="600" y="308" font-size="15" text-anchor="middle" fill="#17395c">GATE A1 ✈</text>
+          <rect x="540" y="324" width="118" height="42" rx="6" fill="#bfe6ff" stroke="#17395c" stroke-width="3"/>
+          <text x="599" y="352" font-size="16" text-anchor="middle">🛩️</text>
+          <g stroke="#17395c" stroke-width="2.5" fill="#ff8fa3">
+            <rect x="546" y="380" width="26" height="12" rx="4"/><rect x="582" y="380" width="26" height="12" rx="4"/><rect x="618" y="380" width="26" height="12" rx="4"/>
+            <line x1="550" y1="392" x2="550" y2="440"/><line x1="568" y1="392" x2="568" y2="440"/>
+            <line x1="586" y1="392" x2="586" y2="440"/><line x1="604" y1="392" x2="604" y2="440"/>
+            <line x1="622" y1="392" x2="622" y2="440"/><line x1="640" y1="392" x2="640" y2="440"/>
+          </g>
+          <!-- a waiting kid + teddy -->
+          <g><circle cx="595" cy="368" r="7" fill="#f2c9a0" stroke="#17395c" stroke-width="2"/><rect x="588" y="375" width="14" height="12" rx="4" fill="#a06cd5" stroke="#17395c" stroke-width="2"/></g>
+          <text x="632" y="378" font-size="13">🧸</text>
+        </g>
+        <line x1="20" y1="440" x2="660" y2="440" stroke="#17395c" stroke-width="3.5"/>
+
+        <!-- ============ BAGGAGE BASEMENT (cutaway) ============ -->
+        <g id="basement">
+          <rect x="20" y="462" width="640" height="126" rx="10" fill="#efe9dc" stroke="#a89b7c" stroke-width="3" stroke-dasharray="10 7"/>
+          <text x="340" y="484" font-size="15" text-anchor="middle" fill="#7c6f55">🧳 BAGGAGE BASEMENT (x-ray view)</text>
+          <line class="belt" x1="262" y1="474" x2="262" y2="524" stroke="#7f8a96" stroke-width="8" stroke-dasharray="7 7"/>
+          <line class="belt" x1="266" y1="528" x2="612" y2="528" stroke="#7f8a96" stroke-width="8" stroke-dasharray="7 7"/>
+          <g id="bxBox" class="hotspot">
+            <rect x="352" y="494" width="112" height="68" rx="8" fill="#4a5b8c" stroke="#6ee7ff" stroke-width="2.5"/>
+            <text x="408" y="508" font-size="12" text-anchor="middle" fill="#bfe6ff">BIG X-RAY</text>
+            <g id="bxView" opacity="0">
+              <text x="408" y="534" font-size="19" text-anchor="middle">👟🧸📗</text>
+              <text id="bxOK" x="408" y="552" font-size="13" text-anchor="middle" fill="#3ddc84">✔ all clear!</text>
+            </g>
+          </g>
+          <text x="470" y="566" font-size="13" text-anchor="middle" fill="#7c6f55">→ a truck carries bags to the plane</text>
+        </g>
+
+        <!-- ============ JET BRIDGE ============ -->
+        <g id="bridgeG" class="hotspot">
+          <g id="bridgeArm">
+            <rect x="0" y="-8" width="106" height="16" rx="7" fill="#8a93a1" stroke="#17395c" stroke-width="2.5"/>
+            <rect x="10" y="-5" width="86" height="4" rx="2" fill="#bfe6ff"/>
+            <rect x="96" y="-13" width="16" height="28" rx="4" fill="#c3ccd4" stroke="#17395c" stroke-width="2.5"/>
+          </g>
+          <rect x="654" y="400" width="14" height="26" rx="4" fill="#8a93a1" stroke="#17395c" stroke-width="2.5"/>
+        </g>
+
+        <!-- ============ BAGGAGE CART ============ -->
+        <g id="bagCart" opacity="0">
+          <rect x="-18" y="-16" width="36" height="12" rx="3" fill="#8a93a1" stroke="#17395c" stroke-width="2.5"/>
+          <rect x="-12" y="-40" width="20" height="24" rx="3" fill="#e63946" stroke="#17395c" stroke-width="2.5"/>
+          <circle cx="-9" cy="-2" r="5" fill="#2b3440" stroke="#17395c" stroke-width="2"/>
+          <circle cx="9" cy="-2" r="5" fill="#2b3440" stroke="#17395c" stroke-width="2"/>
+        </g>
+
+        <!-- ============ PLANE (drawn facing RIGHT, origin = wheels on ground) ============ -->
+        <g id="plane">
+          <ellipse cx="-5" cy="7" rx="152" ry="9" fill="rgba(23,57,92,.15)"/>
+          <g id="planeBody">
+            <rect x="-140" y="-64" width="32" height="9" rx="4.5" fill="#2f6fd6" stroke="#17395c" stroke-width="2.5"/>
+            <path d="M-112,-68 L-136,-118 L-100,-113 L-86,-68 Z" fill="#2f6fd6" stroke="#17395c" stroke-width="3" class="fusPart"/>
+            <circle cx="-112" cy="-96" r="9" fill="#ffd166" stroke="#17395c" stroke-width="2.5"/>
+            <rect id="fus" x="-122" y="-72" width="218" height="54" rx="27" fill="#ffffff" stroke="#17395c" stroke-width="3" class="fusPart"/>
+            <path d="M74,-66 q18,2 20,15 q-11,4 -23,1 Z" fill="#17395c"/>
+            <g fill="#a8dcff" stroke="#17395c" stroke-width="2">
+              <circle cx="-66" cy="-46" r="4.5"/><circle cx="-48" cy="-46" r="4.5"/><circle cx="-30" cy="-46" r="4.5"/>
+              <circle cx="-12" cy="-46" r="4.5"/><circle cx="6" cy="-46" r="4.5"/><circle cx="24" cy="-46" r="4.5"/><circle cx="42" cy="-46" r="4.5"/>
+            </g>
+            <g id="door">
+              <rect x="56" y="-67" width="17" height="31" rx="4" fill="#cfe0ee" stroke="#17395c" stroke-width="2.5"/>
+              <rect id="doorWin" x="60" y="-61" width="9" height="9" rx="2" fill="#a8dcff"/>
+            </g>
+            <path d="M-8,-30 L-46,8 L-4,12 L24,-28 Z" fill="#e9f1f7" stroke="#17395c" stroke-width="3"/>
+            <rect x="-42" y="4" width="32" height="16" rx="8" fill="#b9c3cc" stroke="#17395c" stroke-width="2.5"/>
+            <g stroke="#17395c" stroke-width="4">
+              <line x1="-58" y1="-18" x2="-58" y2="-2"/><line x1="52" y1="-18" x2="52" y2="-2"/><line x1="78" y1="-20" x2="78" y2="-6"/>
+            </g>
+            <circle cx="-58" cy="0" r="8.5" fill="#2b3440"/><circle cx="52" cy="0" r="8.5" fill="#2b3440"/><circle cx="78" cy="-3" r="6" fill="#2b3440"/>
+            <!-- cutaway seats (visible after boarding) -->
+            <g id="seats" opacity="0">
+              <g fill="#ffd166" stroke="#17395c" stroke-width="1.6">
+                <rect x="-92" y="-64" width="11" height="18" rx="3"/><rect x="-76" y="-64" width="11" height="18" rx="3"/>
+                <rect x="-60" y="-64" width="11" height="18" rx="3"/><rect x="-44" y="-64" width="11" height="18" rx="3"/>
+                <rect x="-28" y="-64" width="11" height="18" rx="3"/><rect x="-12" y="-64" width="11" height="18" rx="3"/>
+                <rect x="4" y="-64" width="11" height="18" rx="3"/><rect x="20" y="-64" width="11" height="18" rx="3"/>
+              </g>
+              <g id="mayaMini" transform="translate(-13,-63)">
+                <circle cy="-7" r="5.5" fill="#f2c9a0" stroke="#17395c" stroke-width="1.6"/>
+                <path d="M-5.5,-8 a5.5,5.5 0 0 1 11,0 Z" fill="#5b3a29"/>
+                <rect x="-5" y="-3" width="10" height="12" rx="3.5" fill="#4ecdc4" stroke="#17395c" stroke-width="1.6"/>
+              </g>
+              <path id="beltLine" d="M-21,-49 L-4,-38" stroke="#c1121f" stroke-width="4.5" stroke-linecap="round" opacity="0"/>
+            </g>
+          </g>
+        </g>
+
+        <!-- ============ PUSHBACK TUG ============ -->
+        <g id="tug" opacity="0">
+          <rect x="-26" y="-20" width="36" height="15" rx="4" fill="#ffb703" stroke="#17395c" stroke-width="2.5"/>
+          <rect x="-22" y="-31" width="17" height="13" rx="3" fill="#ffd166" stroke="#17395c" stroke-width="2.5"/>
+          <circle cx="-15" cy="-4" r="6.5" fill="#2b3440" stroke="#17395c" stroke-width="2"/>
+          <circle cx="5" cy="-4" r="6.5" fill="#2b3440" stroke="#17395c" stroke-width="2"/>
+        </g>
+
+        <!-- ============ MAYA + BAGS ============ -->
+        <g id="suitcase" class="draggable">
+          <rect x="-13" y="-40" width="26" height="34" rx="4" fill="#e63946" stroke="#17395c" stroke-width="2.5"/>
+          <path d="M-6,-40 v-6 h12 v6" fill="none" stroke="#17395c" stroke-width="2.5"/>
+          <rect x="-9" y="-32" width="18" height="8" rx="2" fill="#ffd166" stroke="#17395c" stroke-width="1.5"/>
+          <text x="0" y="-20" font-size="8" text-anchor="middle" fill="#fff">SK</text>
+          <circle cx="-7" cy="-4" r="3.5" fill="#2b3440"/><circle cx="7" cy="-4" r="3.5" fill="#2b3440"/>
+        </g>
+        <g id="backpack">
+          <circle cx="0" cy="-4" r="26" fill="transparent"/>
+          <rect x="-9" y="-17" width="18" height="25" rx="6" fill="#ff9f1c" stroke="#17395c" stroke-width="2.5"/>
+          <rect x="-6" y="-11" width="12" height="9" rx="3" fill="#ffd166" stroke="#17395c" stroke-width="2"/>
+        </g>
+        <g id="maya" class="draggable">
+          <circle cx="0" cy="-32" r="30" fill="transparent"/>
+          <rect x="-11" y="-27" width="8.5" height="27" rx="3" fill="#2f6fd6" stroke="#17395c" stroke-width="2"/>
+          <rect x="2.5" y="-27" width="8.5" height="27" rx="3" fill="#2f6fd6" stroke="#17395c" stroke-width="2"/>
+          <rect x="-13" y="-6" width="12" height="6" rx="2.5" fill="#c1121f" stroke="#17395c" stroke-width="1.5"/>
+          <rect x="1" y="-6" width="12" height="6" rx="2.5" fill="#c1121f" stroke="#17395c" stroke-width="1.5"/>
+          <path d="M-14,-53 L14,-53 L20,-25 L-20,-25 Z" fill="#4ecdc4" stroke="#17395c" stroke-width="2.5"/>
+          <rect id="mayaArmR" x="15" y="-51" width="7" height="21" rx="3.5" fill="#f2c9a0" stroke="#17395c" stroke-width="2"/>
+          <rect x="-22" y="-51" width="7" height="21" rx="3.5" fill="#f2c9a0" stroke="#17395c" stroke-width="2"/>
+          <circle cx="0" cy="-65" r="13" fill="#f2c9a0" stroke="#17395c" stroke-width="2.5"/>
+          <path d="M-13,-67 q13,-13 26,0 q-4,-8 -13,-8 q-9,0 -13,8" fill="#5b3a29"/>
+          <circle cx="0" cy="-79" r="5" fill="#5b3a29" stroke="#17395c" stroke-width="1.5"/>
+          <circle cx="-4.5" cy="-63" r="1.7" fill="#17395c"/><circle cx="4.5" cy="-63" r="1.7" fill="#17395c"/>
+          <path d="M-4,-58.5 q4,4 8,0" fill="none" stroke="#17395c" stroke-width="1.8" stroke-linecap="round"/>
+          <g id="ticket" opacity="0">
+            <rect x="18" y="-52" width="20" height="13" rx="2" fill="#fff" stroke="#17395c" stroke-width="1.6"/>
+            <text x="28" y="-42.5" font-size="7" text-anchor="middle" fill="#e63946">12A</text>
+          </g>
+        </g>
+
+        <!-- pulsing "go here" rings -->
+        <g id="targets">
+          <g id="tpCheckin" class="tp"><rect x="106" y="288" width="202" height="158" rx="16"/><text class="tapHand" x="193" y="282">👆</text></g>
+          <g id="tpXray" class="tp"><rect x="294" y="294" width="68" height="152" rx="16"/><text class="tapHand" x="314" y="288">👆</text></g>
+          <g id="tpArch" class="tp"><rect x="452" y="272" width="100" height="174" rx="16"/><text class="tapHand" x="488" y="266">👆</text></g>
+          <g id="tpGate" class="tp"><rect x="516" y="272" width="148" height="174" rx="16"/><text class="tapHand" x="576" y="266">👆</text></g>
+          <g id="tpBridge" class="tp"><rect x="592" y="326" width="76" height="120" rx="16"/><text class="tapHand" x="616" y="320">👆</text></g>
+          <circle id="packRing" r="30" style="display:none"/>
+        </g>
+
+        <g id="fx"></g>
+      </svg>
+
+      <div id="controls">
+        <div id="speedo">
+          <div id="speedBar"><div id="needle"></div></div>
+          <span id="speedNum">0 km/h</span>
+        </div>
+        <div id="btns"></div>
+      </div>
+      <div id="factToast"></div>
+    </div>
+
+    <aside id="panel">
+      <button id="panelClose">✕</button>
+      <section>
+        <h3>🛫 FLIGHT STATUS</h3>
+        <div class="srow"><span>🎫 Boarding pass</span><b id="stPass" class="val no">not yet</b></div>
+        <div class="srow"><span>🧳 Big suitcase</span><b id="stCase" class="val no">with Maya</b></div>
+        <div class="srow"><span>🎒 Backpack</span><b id="stPack" class="val no">on Maya</b></div>
+        <div class="srow"><span>🛡️ Security</span><b id="stSec" class="val no">not yet</b></div>
+        <div class="srow"><span>✈️ Plane</span><b id="stPlane">at the gate</b></div>
+        <div class="srow"><span>🌬️ Wind</span><b id="stWind" class="val ok">10 kn down the runway</b></div>
+      </section>
+      <section>
+        <h3>✅ TRIP CHECKLIST</h3>
+        <div class="chips">
+          <span class="chip" id="chIn">1 · Check-in</span>
+          <span class="chip" id="chSec">2 · Security</span>
+          <span class="chip" id="chBoard">3 · Board</span>
+          <span class="chip" id="chBelt">4 · Seatbelt</span>
+          <span class="chip" id="chOff">5 · Takeoff</span>
+        </div>
+      </section>
+      <section>
+        <h3>🎙️ AIRPORT RADIO</h3>
+        <div id="radioLog"></div>
+      </section>
+      <section>
+        <h3>🔎 TAP TO LEARN</h3>
+        <div style="font-size:.83rem;line-height:1.5">Tap the <b>tower</b>, the <b>windsock</b>, the runway <b>“27”</b>, the <b>X-ray</b>, the <b>check-in</b> sign, or the <b>jet bridge</b> for a fun fact!</div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<div id="rotateOverlay"><div>🔄<br>Turn your phone sideways!<br><small>Airport Adventure plays in landscape 📱</small></div></div>
+
+<div id="xrayModal">
+  <div class="xmCard">
+    <div class="xmTitle">🛡️ X-RAY SCREEN</div>
+    <div class="xmScreen">
+      <span class="xmItem">🧸</span>
+      <span class="xmItem">📕</span>
+      <button id="bigBottle"><span>💧</span></button>
+    </div>
+    <div class="xmText" id="xmText">Uh-oh! A <b>BIG water bottle</b>! 💧<br>Tap the bottle to empty it! 👆</div>
+  </div>
+</div>
+
+<div id="overlay">
+  <div class="card">
+    <h2>🎉 WONDERFUL, CAPTAIN!</h2>
+    <p style="margin:4px 0">Maya is flying to sunny Beachland! ☀️🏖️</p>
+    <p style="font-weight:800;margin:10px 0 4px">Today you learned:</p>
+    <ol>
+      <li>🎫 <b>Check-in:</b> big suitcases ride underneath, in the baggage basement!</li>
+      <li>🛡️ <b>Security:</b> X-rays see <i>inside</i> bags — and big water bottles must be emptied first!</li>
+      <li>🔗 <b>Always buckle your seatbelt</b> on a plane.</li>
+      <li>🎙️ Planes must <b>ask the tower</b> for permission before they take off.</li>
+      <li>🛫 Wings need <b>SPEED</b> to make lift — zoom down the runway <i>first</i>, <b>then</b> pull up!</li>
+    </ol>
+    <button id="btnAgain">▶️ FLY AGAIN</button>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const svg = $('scene');
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,k)=>a+(b-a)*k;
+const easeIO=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+
+/* ---------------- state ---------------- */
+const S = {
+  step:'arrive', slow:false, sound:true,
+  pass:false, suitcase:'maya', pack:'maya', sec:false,
+  boarded:false, belted:false,
+  pState:'gate', px:790, py:555, prot:0, psx:-1, sc:1, speed:0, vy:0,
+  climb:false, done:false, bounceT:0,
+  hold:{taxi:false, thr:false},
+};
+const MAY = {x:80, y:432};
+const PACK = {x:63, y:392, attached:true};
+const CASE = {x:107, y:430};
+const LIFT = {taxi:60, V:225, accel:115};
+
+/* ---------------- tween engine ---------------- */
+const anims=[];
+function tween(dur,fn,done){ anims.push({t:0,dur,fn,done}); }
+function chain(steps,i=0){
+  if(i>=steps.length) return;
+  const st=steps[i];
+  tween(st.dur, k=>st.fn(easeIO(k)), ()=>{ st.end&&st.end(); chain(steps,i+1); });
+}
+
+/* ---------------- sound ---------------- */
+let AC=null, master=null, engOsc=null, engGain=null;
+function audioInit(){
+  if(!S.sound) return null;
+  if(!AC){
+    try{
+      AC=new (window.AudioContext||window.webkitAudioContext)();
+      master=AC.createGain(); master.gain.value=.5; master.connect(AC.destination);
+    }catch(e){ return null; }
+  }
+  if(AC.state==='suspended') AC.resume();
+  return AC;
+}
+function tone(f,dur,type='sine',vol=.25,when=0,glide){
+  const ac=audioInit(); if(!ac) return;
+  const t=ac.currentTime+when;
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.type=type; o.frequency.setValueAtTime(f,t);
+  if(glide) o.frequency.exponentialRampToValueAtTime(glide,t+dur);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol,t+.015);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t+dur+.05);
+}
+const sClick =()=>tone(650,.06,'triangle',.22);
+const sBad   =()=>{tone(170,.22,'square',.28); tone(140,.25,'square',.28,.14);};
+const sBeepOk=()=>{tone(950,.09,'sine',.25); tone(1200,.12,'sine',.25,.11);};
+const sScan  =()=>tone(300,.5,'sine',.18,0,900);
+const sPrint =()=>{tone(180,.08,'square',.2); tone(180,.08,'square',.2,.12); tone(180,.08,'square',.2,.24);};
+const sDing  =()=>{tone(880,.3,'sine',.3); tone(660,.4,'sine',.3,.16);};
+const sChime =()=>{tone(659,.18,'sine',.3); tone(784,.18,'sine',.3,.16); tone(1047,.4,'sine',.32,.32);};
+const sRadio =()=>{tone(1150,.05,'square',.14); tone(900,.05,'square',.14,.08);};
+const sWhoosh=()=>tone(200,1.1,'sawtooth',.16,0,1000);
+function engineEnsure(){
+  const ac=audioInit(); if(!ac||engOsc) return;
+  engOsc=ac.createOscillator(); engGain=ac.createGain();
+  engOsc.type='sawtooth'; engOsc.frequency.value=50; engGain.gain.value=0.0001;
+  engOsc.connect(engGain); engGain.connect(master); engOsc.start();
+}
+
+/* ---------------- radio + status + hint ---------------- */
+function radio(who,text){
+  const log=$('radioLog');
+  const d=document.createElement('div');
+  d.className='msg'; d.innerHTML='<b>'+who+':</b> '+text;
+  log.appendChild(d);
+  while(log.children.length>7) log.removeChild(log.firstChild);
+  log.scrollTop=log.scrollHeight;
+  sRadio();
+}
+const stPlaneTxt={gate:'at the gate',pushback:'pushing back 🚜',taxi:'taxiing 🚙',hold:'holding short ✋',takeoff:'taking off 🔥',airborne:'airborne! ☁️',flying:'flying to Beachland 🏖️'};
+function renderStatus(){
+  const set=(id,txt,ok)=>{const e=$(id); e.textContent=txt; e.classList.toggle('ok',!!ok); e.classList.toggle('no',!ok);};
+  set('stPass', S.pass?'seat 12A ✔':'not yet', S.pass);
+  set('stCase',{maya:'with Maya',basement:'in the basement…',plane:'ON THE PLANE ✔'}[S.suitcase]||'—', S.suitcase==='plane');
+  set('stPack',{maya:'on Maya',xray:'in the X-ray…',cleared:'cleared ✔'}[S.pack]||'—', S.pack==='cleared');
+  set('stSec', S.sec?'all clear ✔':'not yet', S.sec);
+  $('stPlane').textContent=stPlaneTxt[S.pState]||'at the gate';
+  $('chIn').classList.toggle('done',S.pass);
+  $('chSec').classList.toggle('done',S.sec);
+  $('chBoard').classList.toggle('done',S.boarded);
+  $('chBelt').classList.toggle('done',S.belted);
+  $('chOff').classList.toggle('done',S.done);
+}
+const HINTS={
+  arrive:'👋 Meet <b>Maya!</b> Drag her to the <b>CHECK-IN</b> desk inside the terminal.',
+  secBag:'🛡️ Security time! Drag Maya\'s <b>orange backpack</b> into the <b>X-RAY machine</b>.',
+  bottle:'💧 Uh-oh! A <b>BIG water bottle</b> showed up on the X-ray screen! Tap the bottle to empty it.',
+  secMaya:'🚶 Great! Now drag <b>Maya</b> through the <b>metal detector</b> arch.',
+  gate:'🪑 Almost there! Drag Maya to a seat at <b>GATE A1</b> and wait for boarding.',
+  board:'📢 <b>Now boarding!</b> Drag Maya onto the <b>jet bridge</b> to walk into the plane.',
+  belt:'✈️ She\'s in her seat! Click <b>🔗 BUCKLE SEATBELT</b> — everyone buckles up on a plane!',
+  push:'🚪 Doors closed! Click <b>🚜 PUSHBACK</b> so the little tug car can push the plane back.',
+  taxi:'🚙 Hold <b>TAXI</b> to drive to the runway — stop at the yellow hold-short lines!',
+  hold:'🛑 Holding short. Planes must <b>ask the tower</b> first! Click <b>🎙️ REQUEST TAKEOFF</b>.',
+  request:'📡 Shhh… waiting for the tower to answer…',
+  throttle:'🔥 Hold <b>THROTTLE</b>! Watch the speedometer climb into the <b>green zone</b>.',
+  rotate:'🟢 In the green — the wings have enough fast air for <b>lift</b>! Click <b>🛫 ROTATE!</b>',
+  cruise:'☁️ WHEEE! You\'re flying to Beachland! 🏖️',
+};
+function setHint(html){ $('hint').innerHTML=html; }
+let hintFlashT=null;
+function hintFlash(html,ms=2600){
+  setHint(html);
+  clearTimeout(hintFlashT);
+  hintFlashT=setTimeout(()=>{
+    const n=STEP_NUM[S.step];
+    setHint((n?`<span class="stepChip">Step ${n}/9</span>`:'')+(HINTS[S.step]||''));
+  },ms);
+}
+
+/* ---------------- buttons ---------------- */
+function setButtons(list){
+  const box=$('btns'); box.innerHTML='';
+  $('controls').style.display=(list&&list.length)?'flex':'none';
+  (list||[]).forEach(b=>{
+    const el=document.createElement('button');
+    el.className='ctl'+(b.hold?' hold':'');
+    el.id=b.id; el.innerHTML=b.label;
+    if(b.hold){
+      el.addEventListener('pointerdown',e=>{e.preventDefault(); audioInit(); if(b.start)b.start();});
+      const stop=()=>{ if(b.stop)b.stop(); };
+      el.addEventListener('pointerup',stop);
+      el.addEventListener('pointercancel',stop);
+      el.addEventListener('pointerleave',stop);
+    }else{
+      el.addEventListener('click',()=>{ audioInit(); sClick(); b.onClick&&b.onClick(); });
+    }
+    box.appendChild(el);
+  });
+}
+function noButtons(){ setButtons([]); }
+
+/* ---------------- step machine ---------------- */
+const STEP_NUM={arrive:1,secBag:2,bottle:2,secMaya:3,gate:4,board:5,belt:6,push:7,taxi:7,hold:8,request:8,throttle:9,rotate:9,cruise:9};
+const TP={arrive:'tpCheckin',secBag:'tpXray',secMaya:'tpArch',gate:'tpGate',board:'tpBridge'};
+function setStep(st){
+  S.step=st;
+  document.querySelectorAll('.tp').forEach(t=>t.classList.remove('on'));
+  const tp=TP[st];
+  if(tp) $(tp).classList.add('on');
+  const n=STEP_NUM[st];
+  setHint((n?`<span class="stepChip">Step ${n}/9</span>`:'')+(HINTS[st]||''));
+  $('speedo').classList.toggle('show', st==='throttle'||st==='rotate');
+  switch(st){
+    case 'arrive': noButtons(); break;
+    case 'secBag': noButtons(); $('backpack').classList.add('draggable'); break;
+    case 'bottle': noButtons(); break;
+    case 'secMaya': noButtons(); $('backpack').classList.remove('draggable'); break;
+    case 'gate': case 'board': noButtons(); break;
+    case 'belt': setButtons([{id:'bBelt',label:'🔗 BUCKLE SEATBELT',onClick:doBelt}]); break;
+    case 'push': setButtons([{id:'bPush',label:'🚜 PUSHBACK',onClick:doPushback}]); break;
+    case 'taxi': setButtons([{id:'bTaxi',label:'🚙 TAXI (hold!)',hold:true,
+        start:()=>{S.hold.taxi=true; engineEnsure();},
+        stop:()=>{S.hold.taxi=false;}}]); break;
+    case 'hold': setButtons([{id:'bReq',label:'🎙️ REQUEST TAKEOFF',onClick:doRequest}]); break;
+    case 'request': noButtons(); break;
+    case 'throttle': setButtons([{id:'bThr',label:'🔥 THROTTLE (hold!)',hold:true,
+        start:()=>{S.hold.thr=true; engineEnsure();},
+        stop:()=>{S.hold.thr=false;}}]); break;
+    case 'rotate': setButtons([
+        {id:'bThr',label:'🔥 THROTTLE (hold!)',hold:true,
+          start:()=>{S.hold.thr=true; engineEnsure();},
+          stop:()=>{S.hold.thr=false;}},
+        {id:'bRot',label:'🛫 ROTATE!',onClick:doRotate}
+      ]); break;
+    case 'cruise': noButtons(); break;
+  }
+  renderStatus();
+}
+
+/* ---------------- drag & drop ---------------- */
+function svgPt(e){
+  const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+function inRect(p,r){ return p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h; }
+const ZONES={
+  checkin:{x:112,y:294,w:190,h:146},
+  xray:{x:296,y:330,w:48,h:110},
+  arch:{x:456,y:276,w:92,h:164},
+  gate:{x:520,y:276,w:140,h:164},
+  bridge:{x:596,y:330,w:66,h:110},
+};
+let drag=null;
+function startDrag(e,g,kind){
+  if(drag) return;
+  if(kind==='maya'&&(S.boarded||S.step==='cruise')) return;
+  e.preventDefault();
+  const p=svgPt(e);
+  const pos=kind==='maya'?MAY:kind==='backpack'?PACK:CASE;
+  drag={g,kind,pos,p0:p,ox:pos.x,oy:pos.y,moved:0,
+        targets:activeTargets(kind)};
+  try{ g.setPointerCapture(e.pointerId); }catch(err){}
+}
+function activeTargets(kind){
+  const t=[];
+  if(kind==='maya'){
+    if(S.step==='arrive') t.push({z:ZONES.checkin,go:dropCheckin});
+    if(S.step==='secBag'||S.step==='secMaya') t.push({z:ZONES.arch,go:dropArch});
+    if(S.step==='gate') t.push({z:ZONES.gate,go:dropGate});
+    if(S.step==='board') t.push({z:ZONES.bridge,go:dropBridge});
+  }
+  if(kind==='backpack'&&S.step==='secBag') t.push({z:ZONES.xray,go:dropXray});
+  return t;
+}
+window.addEventListener('pointermove',e=>{
+  if(!drag) return;
+  const p=svgPt(e);
+  drag.moved+=Math.abs(p.x-drag.p0.x)+Math.abs(p.y-drag.p0.y);
+  drag.pos.x=drag.ox+(p.x-drag.p0.x);
+  drag.pos.y=drag.oy+(p.y-drag.p0.y);
+});
+window.addEventListener('pointerup',e=>{
+  if(!drag) return;
+  const p=svgPt(e);
+  const hit=(drag.targets||[]).find(t=>inRect(p,t.z));
+  const d=drag; drag=null;
+  if(hit){ hit.go(); }
+  else{
+    const sx=d.pos.x, sy=d.pos.y;
+    tween(.22,k=>{d.pos.x=lerp(sx,d.ox,k); d.pos.y=lerp(sy,d.oy,k);});
+    if(d.moved<5&&d.kind==='maya') wave();
+  }
+});
+function wave(){
+  const a=$('mayaArmR');
+  tween(.6,k=>{a.setAttribute('transform',`rotate(${Math.sin(k*Math.PI*4)*30} 18 -51)`);},
+    ()=>a.removeAttribute('transform'));
+}
+function bindDrag(id,kind){
+  const g=$(id);
+  g.addEventListener('pointerdown',e=>{audioInit(); startDrag(e,g,kind);});
+}
+bindDrag('maya','maya');
+bindDrag('backpack','backpack');
+
+/* ---------------- drop handlers ---------------- */
+function dropCheckin(){
+  if(S.step!=='arrive') return;
+  S.suitcase='counter';
+  const sx=CASE.x, sy=CASE.y;
+  sPrint();
+  $('printer').setAttribute('opacity','1');
+  chain([
+    {dur:.5,fn:k=>{MAY.x=lerp(MAY.x,185,k); MAY.y=lerp(MAY.y,432,k);}},
+    {dur:.7,fn:k=>{CASE.x=lerp(sx,262,k); CASE.y=lerp(sy,438,k);},
+      end:()=>{ S.pass=true; $('ticket').setAttribute('opacity','1'); renderStatus(); }},
+    {dur:.35,fn:k=>{CASE.el?0:0; $('suitcase').setAttribute('opacity',String(1-k));},
+      end:()=>{ S.suitcase='basement'; renderStatus();
+        radio('CHECK-IN','Maya, seat <b>12A</b>! Your big bag is tagged and riding the belt below. 🧳'); }},
+    {dur:.35,fn:k=>{CASE.y=lerp(438,474,k); $('suitcase').setAttribute('opacity',String(k));},
+      end:()=>{CASE.x=262; CASE.y=474;}},
+    {dur:.5,fn:k=>{CASE.y=lerp(474,528,k);}},
+    {dur:1.1,fn:k=>{CASE.x=lerp(262,350,k);}},
+    {dur:1.5,fn:k=>{
+        CASE.x=lerp(350,466,k);
+        if(k>.05)$('bxView').setAttribute('opacity','1');
+        if(k>.55&&$('bxOK').getAttribute('opacity')==='0'){
+          $('bxOK').setAttribute('opacity','1'); sBeepOk();
+        }
+      },
+      end:()=>{ $('bxView').setAttribute('opacity','0'); }},
+    {dur:1.2,fn:k=>{CASE.x=lerp(466,610,k); $('suitcase').setAttribute('opacity',String(1-k*.9));},
+      end:()=>{
+        $('suitcase').setAttribute('opacity','0');
+        S.suitcase='plane'; renderStatus();
+        $('bagCart').setAttribute('opacity','1');
+        sBeepOk();
+        radio('BAGGAGE','🧳 Your suitcase is ON THE PLANE! It rides underneath, in the cargo hold.');
+        PACK.attached=false; PACK.x=MAY.x+30; PACK.y=MAY.y-40;
+        setStep('secBag');
+      }},
+  ]);
+}
+function dropXray(){
+  if(S.step!=='secBag') return;
+  S.pack='xray'; renderStatus();
+  const sx=PACK.x, sy=PACK.y;
+  sScan();
+  chain([
+    {dur:.8,fn:k=>{PACK.x=lerp(sx,340,k); PACK.y=lerp(sy,415,k);}},
+    {dur:.3,fn:k=>$('backpack').setAttribute('opacity',String(1-k))},
+    {dur:.15,fn:()=>{}, end:()=>{
+      $('xrayView').setAttribute('opacity','1');
+      setStep('bottle');
+      setTimeout(()=>$('xrayModal').classList.add('show'),450);
+    }},
+  ]);
+}
+let bottleBusy=false;
+$('bigBottle').addEventListener('click',()=>{
+  if(S.step!=='bottle'||bottleBusy) return;
+  bottleBusy=true; audioInit();
+  tone(500,.5,'sine',.2,0,180);
+  $('bigBottle').querySelector('span').textContent='💦';
+  setTimeout(()=>{
+    $('bigBottle').querySelector('span').textContent='⭕';
+    $('bigBottle').classList.add('empty');
+    $('xmText').innerHTML='✅ <b>All clear!</b> Big drinks must be <b>empty</b> to fly.';
+    sBeepOk();
+    radio('SECURITY','💧 Good job! Big water bottles must be <b>emptied</b> before the checkpoint.');
+    setTimeout(()=>{
+      $('xrayModal').classList.remove('show');
+      bottleBusy=false;
+      afterBottleCleared();
+    },1200);
+  },700);
+});
+function afterBottleCleared(){
+  $('xrayView').setAttribute('opacity','0');
+  $('backpack').setAttribute('opacity','1');
+  PACK.x=462; PACK.y=415; S.pack='cleared'; renderStatus();
+  chain([{dur:.5,fn:k=>{PACK.x=lerp(462,MAY.x+30,k); PACK.y=lerp(415,MAY.y-40,k);},
+    end:()=>{ PACK.attached=true; S.step='secBag'; setStep('secMaya'); }}]);
+}
+function dropArch(){
+  if(S.step!=='secBag'&&S.step!=='secMaya') return;
+  if(S.pack!=='cleared'){
+    sBad();
+    $('archLight').setAttribute('fill','#e5383b');
+    const ox=MAY.x;
+    tween(.5,k=>{MAY.x=ox+Math.sin(k*Math.PI*5)*7;});
+    setTimeout(()=>$('archLight').setAttribute('fill','#22bb55'),900);
+    hintFlash('✋ <b>BEEP BEEP!</b> First send the backpack through the <b>X-RAY</b>!');
+    return;
+  }
+  S.sec=true; renderStatus(); sBeepOk();
+  radio('SECURITY','🛡️ All clear! You kept everyone safe. Have a great flight! ✈');
+  setStep('gate');
+}
+function dropGate(){
+  if(S.step!=='gate') return;
+  chain([{dur:.4,fn:k=>{MAY.x=lerp(MAY.x,566,k); MAY.y=lerp(MAY.y,432,k);},
+    end:()=>{ sDing();
+      radio('GATE A1','📢 Now boarding flight <b>SK-100</b> to sunny <b>Beachland</b>! 🏖️');
+      setStep('board');
+    }}]);
+}
+function dropBridge(){
+  if(S.step!=='board'||S.boarded) return;
+  noButtons();
+  chain([
+    {dur:.9,fn:k=>{MAY.x=lerp(MAY.x,668,k); MAY.y=lerp(MAY.y,452,k); MAY.o=1-k; $('maya').setAttribute('opacity',String(1-k));}},
+  ],0);
+  setTimeout(()=>{
+    S.boarded=true; renderStatus();
+    $('plane').classList.add('xray');
+    radio('CABIN','Welcome aboard, Maya! Seat <b>12A</b>, by the window. 🪟');
+    setStep('belt');
+  },950);
+}
+function doBelt(){
+  S.belted=true; renderStatus();
+  $('beltLine').setAttribute('opacity','1');
+  sDing();
+  radio('CABIN','🔗 Click! Seatbelt fastened. "To be safe in the sky!" says the captain.');
+  setStep('push');
+}
+function doPushback(){
+  noButtons();
+  S.pState='pushback'; renderStatus();
+  radio('COCKPIT','🚪 Doors closed, seatbelts fastened!');
+  radio('GROUND','Pushback approved — brakes released! 🚜');
+  const tug=$('tug'), arm=$('bridgeArm');
+  chain([
+    {dur:.7,fn:k=>{arm.setAttribute('transform',`translate(662,412) rotate(52) scale(${1-.94*k},1)`);},
+      end:()=>{ arm.setAttribute('transform','translate(662,412) rotate(52) scale(0.06,1)'); }},
+    {dur:1.6,fn:k=>{ S.px=lerp(790,880,k); S.py=555; S.psx=-1; }},
+    {dur:1.8,fn:k=>{ S.px=lerp(880,905,k); S.py=lerp(555,620,k); S.psx=lerp(-1,1,k); },
+      end:()=>{
+        S.psx=1; S.prot=0; S.pState='taxi'; renderStatus();
+        tug.setAttribute('opacity','0');
+        radio('GROUND','Taxi to <b>runway 27</b>, hold short and wait. 🚙');
+        setStep('taxi');
+      }},
+  ]);
+  tug.setAttribute('opacity','1');
+}
+function doRequest(){
+  setStep('request');
+  radio('TOWER ✅','…');
+  setTimeout(()=>{
+    radio('TOWER','🎧 SK-100, wind 10 knots straight down the runway — runway <b>27</b>, <b>CLEARED FOR TAKEOFF!</b> 🛫');
+    sChime();
+    S.pState='takeoff'; renderStatus();
+    setStep('throttle');
+  },1500);
+}
+function doRotate(){
+  if(S.speed>=LIFT.V){
+    S.climb=true; S.pState='airborne'; renderStatus();
+    noButtons();
+    sWhoosh();
+    confetti();
+    radio('TOWER','🎉 SK-100 is <b>AIRBORNE</b>! Great flying, captain!');
+  }else{
+    if(S.bounceT>0) return;
+    S.bounceT=.8;
+    sBad();
+    S.speed*=.7;
+    tween(.5,k=>{S.prot=Math.sin(k*Math.PI*3)*6*(1-k);},()=>{S.prot=0;});
+    hintFlash('✋ <b>Too slow!</b> Wings need <b>fast air</b> to make lift — wait for the green zone!');
+  }
+}
+function brakeReset(){
+  if(S.braking) return;
+  S.braking=true; S.speed=0; S.hold.thr=false; S.climb=false;
+  S.pState='hold'; renderStatus();
+  const g=$('plane');
+  tween(.4,k=>g.setAttribute('opacity',String(1-k)),()=>{
+    S.px=1057; S.py=620; S.prot=0; S.braking=false;
+    g.setAttribute('opacity','1');
+    radio('TOWER','✋ Whoa — brakes! The runway ended. Try again: <b>full throttle</b>, then <b>ROTATE in the green</b>! 💪');
+    S.pState='takeoff';
+    setStep('throttle');
+  });
+}
+function success(){
+  S.done=true; S.pState='flying'; renderStatus(); sChime();
+  setTimeout(()=>{ $('overlay').classList.add('show'); },1900);
+}
+function confetti(){
+  const fx=$('fx'), colors=['#ff6b6b','#ffd166','#4ecdc4','#a06cd5','#ff9f1c'];
+  for(let i=0;i<26;i++){
+    const r=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    const sz=5+Math.random()*6;
+    r.setAttribute('width',sz); r.setAttribute('height',sz*.6);
+    r.setAttribute('fill',colors[i%colors.length]);
+    fx.appendChild(r);
+    const x=S.px+(Math.random()-.5)*140, y=S.py-40-Math.random()*40;
+    const vx=(Math.random()-.5)*160, vy=-60-Math.random()*90, rot=Math.random()*360;
+    const obj={x,y,vx,vy,rot,t:0};
+    tween(2.2,k=>{
+      obj.t=k;
+      r.setAttribute('transform',`translate(${obj.x+obj.vx*k*2.2},${obj.y+(obj.vy*k*2.2)+140*k*k}) rotate(${rot+360*k})`);
+      r.setAttribute('opacity',String(1-k));
+    },()=>r.remove());
+  }
+}
+
+/* ---------------- fun facts ---------------- */
+const FACTS=[
+  ['towerG','🗼 The <b>TOWER</b>: controllers can see the whole airport. They tell planes when it\'s safe to move — planes NEVER drive or take off without permission!'],
+  ['sock','🌬️ The <b>windsock</b> points the way the wind BLOWS. Planes take off <b>toward the wind</b> — air rushing over the wings helps make lift!'],
+  ['rwy27','🛬 Runways are named by their direction: <b>27</b> means heading 270° (roughly west). Big airports have many runways, each with its own number!'],
+  ['xrayMachine','🛡️ The <b>X-ray</b> lets security see <b>inside</b> bags without opening them — like superhero vision! It keeps everyone safe.'],
+  ['checkinSign','🎫 At <b>check-in</b> they weigh your big suitcase and give it a tag, so it can find you again at the other airport!'],
+  ['bridgeG','🌉 The <b>jet bridge</b> is a moving hallway — you walk from the gate straight into the plane without going outside!'],
+  ['bxBox','🧳 Your big bag travels UNDER the plane! It rides hidden belts in the baggage basement, gets its own X-ray, then a truck takes it to the plane.'],
+];
+FACTS.forEach(([id,text])=>{
+  const el=$(id); if(!el) return;
+  let hideT=null;
+  el.addEventListener('pointerdown',()=>{
+    const t=$('factToast');
+    t.innerHTML=text; t.style.display='block';
+    sClick();
+    clearTimeout(hideT);
+    hideT=setTimeout(()=>{t.style.display='none';},7000);
+  });
+});
+
+/* ---------------- header buttons ---------------- */
+$('btnSlow').addEventListener('click',()=>{
+  S.slow=!S.slow; $('btnSlow').classList.toggle('on',S.slow); sClick();
+});
+$('btnSound').addEventListener('click',()=>{
+  S.sound=!S.sound;
+  $('btnSound').textContent=S.sound?'🔊 sound':'🔇 muted';
+  $('btnSound').classList.toggle('on',!S.sound);
+  if(master) master.gain.value=S.sound?.5:0;
+  if(S.sound) audioInit();
+});
+$('btnReset').addEventListener('click',()=>location.reload());
+$('btnAgain').addEventListener('click',()=>location.reload());
+$('panelToggle').addEventListener('click',()=>{ $('panel').classList.toggle('open'); sClick(); });
+$('panelClose').addEventListener('click',()=>{ $('panel').classList.remove('open'); sClick(); });
+
+/* ---------------- main loop ---------------- */
+const clouds=[{el:$('cl1'),x:240,y:95,v:9},{el:$('cl2'),x:760,y:60,v:6},{el:$('cl3'),x:1130,y:140,v:12}];
+const beltEls=[...document.querySelectorAll('.belt')].map(el=>({el,off:0}));
+let radarA=0, sockT=0;
+function setT(g,x,y,r=0,sx=1,sy=null){
+  g.setAttribute('transform',`translate(${x} ${y}) rotate(${r}) scale(${sx} ${sy===null?Math.abs(sx):sy})`);
+}
+function renderIds(){
+  $('maya').setAttribute('transform',`translate(${MAY.x} ${MAY.y})`);
+  $('backpack').setAttribute('transform',`translate(${PACK.x} ${PACK.y})`);
+  $('suitcase').setAttribute('transform',`translate(${CASE.x} ${CASE.y})`);
+  const pr=$('packRing');
+  if(S.step==='secBag'&&S.pack==='maya'){ pr.style.display='block'; pr.setAttribute('cx',PACK.x); pr.setAttribute('cy',PACK.y-4); }
+  else pr.style.display='none';
+}
+function setPlane(){
+  $('plane').setAttribute('transform',
+    `translate(${S.px} ${S.py}) rotate(${S.prot}) scale(${S.psx*S.sc} ${S.sc})`);
+}
+let last=performance.now();
+function frame(dt){
+  // clouds
+  clouds.forEach(c=>{ c.x+=c.v*dt; if(c.x>1760)c.x=-140; setT(c.el,c.x,c.y); });
+  // belts
+  beltEls.forEach(b=>{ b.off-=34*dt; b.el.setAttribute('stroke-dashoffset',String(b.off)); });
+  // radar + windsock
+  radarA=(radarA+70*dt)%360;
+  $('radarArm').setAttribute('transform',`rotate(${radarA} 754 122)`);
+  sockT+=dt*3;
+  $('sockCloth').setAttribute('transform',`rotate(${Math.sin(sockT)*4} 1548 484)`);
+  // attachments follow Maya
+  if(PACK.attached){ PACK.x=MAY.x-17; PACK.y=MAY.y-40; }
+  if(S.suitcase==='maya'){ CASE.x=MAY.x+27; CASE.y=MAY.y-2; }
+  renderIds();
+  // plane physics
+  if(S.pState==='taxi'){
+    if(S.hold.taxi){ S.speed=Math.min(LIFT.taxi,S.speed+90*dt); engineEnsure(); if(engGain)engGain.gain.value=.015; if(engOsc)engOsc.frequency.value=48; }
+    else S.speed=Math.max(0,S.speed-160*dt);
+    S.px+=S.speed*dt;
+    if(S.px>=1050){ S.px=1050;
+      if(S.step==='taxi'){ S.speed=0; S.hold.taxi=false; S.pState='hold'; renderStatus();
+        radio('TOWER ✋','Holding short of runway 27. Wait for clearance!');
+        setStep('hold'); } }
+  }
+  if(S.pState==='takeoff'||S.pState==='airborne'){
+    if(S.hold.thr){ S.speed=Math.min(350,S.speed+LIFT.accel*dt); }
+    else if(!S.climb){ S.speed=Math.max(0,S.speed-260*dt); }
+    S.px+=S.speed*dt;
+    if(engGain){
+      engGain.gain.value=S.climb?.05:(S.hold.thr?.028+.00006*S.speed*S.speed:.012);
+      engOsc.frequency.value=44+S.speed*.28;
+    }
+    if(!S.climb&&S.step==='throttle'&&S.speed>=LIFT.V) setStep('rotate');
+    if(S.climb){
+      S.speed=Math.max(150,S.speed-40*dt);
+      S.vy=Math.min(130,S.vy+120*dt);
+      S.py-=S.vy*dt;
+      S.prot+=(-13-S.prot)*Math.min(1,3*dt);
+      S.sc=Math.max(.6,S.sc-.13*dt);
+      if(!S.done&&(S.py<380||S.px>1850)) success();
+    }
+    if(!S.climb&&S.px>1560&&S.pState==='takeoff') brakeReset();
+    if(S.bounceT>0) S.bounceT-=dt;
+  }
+  setPlane();
+  // tug follows nose during pushback
+  if(S.pState==='pushback'){
+    setT($('tug'),S.px+S.psx*142,S.py,0,S.psx,1);
+  }
+  // speedometer
+  if($('speedo').classList.contains('show')){
+    $('needle').style.left=clamp(S.speed/350*100,0,97)+'%';
+    $('speedNum').textContent=Math.round(S.speed*0.9)+' km/h';
+  }
+  // animations
+  for(let i=anims.length-1;i>=0;i--){
+    const a=anims[i]; a.t+=dt;
+    const k=clamp(a.t/a.dur,0,1);
+    a.fn(k);
+    if(k>=1){ anims.splice(i,1); a.done&&a.done(); }
+  }
+}
+requestAnimationFrame(function tick(now){
+  const raw=Math.min(.05,(now-last)/1000); last=now;
+  frame(raw*(S.slow?.25:1));
+  requestAnimationFrame(tick);
+});
+/* watchdog: some embedded/background tabs throttle rAF to a crawl */
+setInterval(()=>{
+  if(performance.now()-last>250){
+    const now=performance.now();
+    const raw=Math.min(.05,(now-last)/1000); last=now;
+    frame(raw*(S.slow?.25:1));
+  }
+},80);
+
+/* ---------------- init ---------------- */
+renderIds(); setPlane(); renderStatus(); setStep('arrive');
+radio('TOWER','☀️ Good morning, Little Airport! Flight <b>SK-100</b> to Beachland is getting ready.');
+radio('TOWER','🎓 Help Maya catch her flight — follow the yellow hint at the top!');
+
+/* tiny test hooks (harmless) */
+window.__sim={
+  step:()=>S.step,
+  S,
+  simulate(sec){ const n=Math.max(1,Math.round(sec*60)); for(let i=0;i<n;i++) frame(1/60); },
+  drag(id,x,y){
+    const pos=id==='maya'?MAY:id==='backpack'?PACK:CASE;
+    const g=$(id);
+    const ctm=svg.getScreenCTM();
+    const toC=(px,py)=>({x:px*ctm.a+ctm.e, y:py*ctm.d+ctm.f});
+    const fire=(tgt,type,px,py)=>tgt.dispatchEvent(new PointerEvent(type,{clientX:px,clientY:py,pointerId:7,bubbles:true,cancelable:true}));
+    let c=toC(pos.x,pos.y-30);
+    fire(g,'pointerdown',c.x,c.y);
+    const steps=6;
+    let i=0;
+    const iv=setInterval(()=>{
+      i++;
+      const k=i/steps;
+      c=toC(lerp(pos.x,x,k),lerp(pos.y-30,y-30,k));
+      fire(window,'pointermove',c.x,c.y);
+      if(i>=steps){ clearInterval(iv); fire(window,'pointerup',c.x,c.y); }
+    },60);
+  },
+  click(id){
+    const el=$(id);
+    if(!el) throw new Error('no button '+id);
+    const r=el.getBoundingClientRect();
+    const cx=r.left+r.width/2, cy=r.top+r.height/2;
+    el.dispatchEvent(new PointerEvent('pointerdown',{clientX:cx,clientY:cy,pointerId:8,bubbles:true,cancelable:true}));
+    el.dispatchEvent(new PointerEvent('pointerup',{clientX:cx,clientY:cy,pointerId:8,bubbles:true,cancelable:true}));
+    el.dispatchEvent(new MouseEvent('click',{clientX:cx,clientY:cy,bubbles:true,cancelable:true}));
+  },
+  hold(id,down){
+    const el=$(id);
+    if(!el){ if(!down){ S.hold.taxi=false; S.hold.thr=false; } return; }
+    const r=el.getBoundingClientRect();
+    const ev=new PointerEvent(down?'pointerdown':'pointerup',{clientX:r.left+r.width/2,clientY:r.top+r.height/2,pointerId:9,bubbles:true,cancelable:true});
+    $(id).dispatchEvent(ev);
+  },
+  btn(id){ this.click(id); },
+};
+})();
+</script>
+</body>
+</html>
